@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/1.8.2/tailwind.min.css"
+		crossorigin="anonymous" media="(max-width: 800px)" />
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+		integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous"
+		media="(max-width: 800px)" />
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+		integrity="sha512-c42qTSw/wPZ3/5LBzD+Bw5f7bSF2oxou6wEb+I/lqeaKV5FDIfMvvRp772y4jcJLKuGUOpbJMdg/BTl50fJYAw=="
+		crossorigin="anonymous"
+		media="(max-width: 800px)" />
+	<title>Render Blocking CSS</title>
+</head>
+
+<body>
+	<div class="warning">
+		Performance timing API isn't supported! Check the
+		<a href="https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver/PerformanceObserver#Browser_compatibility"
+			target="_blank">browser compatibility here.</a>
+	</div>
+	<div class="header">
+		<h1 class="title">Render Blocking CSS</h1>
+		<p>
+			Try resize the window's width to <strong class="direction"></strong> than <strong>800px</strong> then reload to
+			see how the Render Blocking CSS
+			affect rendering.
+		</p>
+		<p>The current width is: <strong class="window-width"></strong></p>
+	</div>
+	<div class="description">
+		<h2>Loading events</h2>
+		<p>DOMContentLoaded: <strong class="dom-loaded">......</strong></p>
+		<p>Window Loaded: <strong class="window-loaded">......</strong></p>
+		<p>CSS blocked first render: <strong class="render-blocking">......</strong></p>
+		<br>
+		<h2>Performance paint timing</h2>
+		<table>
+			<thead>
+				<th></th>
+				<th>CSS NOT BLOCK first render</th>
+				<th>CSS BLOCK first render</th>
+			</thead>
+			<tbody>
+				<tr>
+					<td>The time to first paint (first render)</td>
+					<td class="first-paint"></td>
+					<td class="first-paint-blocked"></td>
+				</tr>
+				<tr>
+					<td>The time to first-contentful-paint</td>
+					<td class="first-contentful-paint"></td>
+					<td class="first-contentful-paint-blocked"></td>
+				</tr>
+			</tbody>
+		</table>
+		<br>
+		<h2>For a better understanding:</h2>
+		<p>- Open <strong>browser devtool</strong></p>
+		<p>- Switch to <strong>Perfomance</strong> tab</p>
+		<p>- Throttle the network to <strong>Slow 3G</strong> and change CPU to <strong>6x slowdown</strong></p>
+	</div>
+
+	<script>
+		const domMap = {
+			'window-width': document.querySelector('.window-width'),
+			'direction': document.querySelector('.direction'),
+			'dom-loaded': document.querySelector('.dom-loaded'),
+			'window-loaded': document.querySelector('.window-loaded'),
+			'render-blocking': document.querySelector('.render-blocking'),
+			'first-paint-blocked': document.querySelector('.first-paint-blocked'),
+			'first-contentful-paint-blocked': document.querySelector('.first-contentful-paint-blocked'),
+			'first-paint': document.querySelector('.first-paint'),
+			'first-contentful-paint': document.querySelector('.first-contentful-paint'),
+		}
+		const STORAGE_KEY = '__timings'
+		const BOUNDARY = 800
+
+		function updateContent({ selector, value = 'true' }) {
+			domMap[selector].textContent = value
+		}
+
+		window.addEventListener('resize', function () {
+			updateContent({ selector: 'window-width', value: `${window.innerWidth}px` })
+		})
+
+		window.addEventListener('DOMContentLoaded', function () {
+			console.log('DOMContentLoaded')
+			updateContent({ selector: 'window-width', value: `${window.innerWidth}px` })
+			updateContent({ selector: 'dom-loaded' })
+			updateContent({ selector: 'direction', value: window.innerWidth < BOUNDARY ? 'more' : 'less' })
+			updateContent({ selector: 'render-blocking', value: window.innerWidth < BOUNDARY })
+			Object.entries(timings).forEach(([selector, value]) => updateContent({ selector, value }))
+		})
+
+		let timings = {
+			'first-paint-blocked': '...',
+			'first-contentful-paint-blocked': '...',
+			'first-paint': '...',
+			'first-contentful-paint': '...',
+		}
+		try {
+			const storedTimings = JSON.parse(localStorage.getItem(STORAGE_KEY))
+			if (storedTimings && typeof storedTimings === "object") {
+				timings = storedTimings
+			}
+		} catch (err) {
+			console.trace('Failed to parse timings from storage, use default value.', err)
+		}
+
+		window.addEventListener('load', function () {
+			console.log('Window loaded')
+			updateContent({ selector: 'window-loaded' })
+		})
+
+		if ("PerformanceObserver" in window) {
+			try {
+				const perfObsever = new PerformanceObserver(perf => {
+					const perfEntries = perf.getEntriesByType('paint');
+					perfEntries.forEach(({ name, startTime }) => {
+						console.log(`The time to ${name} was ${startTime} milliseconds.`);
+
+						const isRenderBlocked = window.innerWidth < BOUNDARY ? '-blocked' : ''
+						const selector = `${name}${isRenderBlocked}`
+						const value = `${startTime.toFixed(2)} ms`
+
+						timings[selector] = value
+						localStorage.setItem(STORAGE_KEY, JSON.stringify(timings))
+						updateContent({ selector, value })
+					});
+				})
+				perfObsever.observe({ entryTypes: ["paint"] })
+			} catch (err) {
+				console.trace(err)
+			}
+		} else {
+			document.querySelector('.warning').classList.add('show')
+		}
+
+		// Until the new DOM loaded, browser keep the old DOM content of the last page,
+		// This clear the old content to have better understanding of render blocking resources
+		window.addEventListener('beforeunload', () => {
+			document.body.innerHTML = '';
+		})
+	</script>
+</body>
+
+</html>
