@@ -15,9 +15,12 @@
 
 <body>
 	<div class="warning">
-		Performance timing API isn't supported! Check the
 		<a href="https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver/PerformanceObserver#Browser_compatibility"
-			target="_blank">browser compatibility here.</a>
+			target="_blank">PerformanceObserver API</a>
+		or
+		<a href="https://developer.mozilla.org/en-US/docs/Web/API/PerformancePaintTiming#Browser_compatibility"
+			target="_blank">PerformancePaintTiming API</a>
+		isn't supported on your browser!
 	</div>
 	<div class="header">
 		<h1 class="title">Render Blocking CSS</h1>
@@ -113,7 +116,7 @@
 			updateContent({ selector: 'window-loaded' })
 		})
 
-		if ("PerformanceObserver" in window) {
+		if ("PerformanceObserver" in window && "PerformancePaintTiming" in window) {
 			try {
 				const perfObsever = new PerformanceObserver(perf => {
 					const perfEntries = perf.getEntriesByType('paint');
