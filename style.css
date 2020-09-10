@@ -35,12 +35,20 @@ strong {
 	font-style: italic;
 	display: none;
 	text-align: center;
-	background: cornflowerblue;
-	color: #fff;
+	background: darkorange;
+	color: black;
+	position: absolute;
+	width: 100%;
+	bottom: 0;
+	z-index: 1;
 }
 
 .warning.show {
 	display: block;
+}
+
+.warning a {
+	color: blueviolet;
 }
 
 table {
@@ -59,6 +67,18 @@ table th {
   padding-top: 12px;
   padding-bottom: 12px;
   text-align: left;
-  background-color: #4CAF50;
+  background-color: darkkhaki;
   color: white;
+}
+
+.result {
+	position: absolute;
+	bottom: 0;
+	text-align: center;
+	width: 100%;
+	background: darkorange;
+}
+
+.result.good {
+	background: limegreen;
 }

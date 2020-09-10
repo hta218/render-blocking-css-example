@@ -6,10 +6,10 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link rel="stylesheet" href="style.css">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/1.8.2/tailwind.min.css"
-		crossorigin="anonymous" media="(max-width: 800px)" />
+		crossorigin="anonymous" media="(min-width: 800px)" />
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
 		integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous"
-		media="(max-width: 800px)" />
+		media="(min-width: 800px)" />
 	<title>Render Blocking CSS</title>
 </head>
 
@@ -41,8 +41,8 @@
 		<table>
 			<thead>
 				<th></th>
-				<th>CSS NOT BLOCK first render</th>
-				<th>CSS BLOCK first render</th>
+				<th>NOT BLOCK by CSS</th>
+				<th>BLOCK by CSS</th>
 			</thead>
 			<tbody>
 				<tr>
@@ -60,12 +60,16 @@
 		<br>
 		<h2>For a better understanding:</h2>
 		<p>- Open <strong>browser devtool</strong></p>
+		<p>- Switch to <strong>Network</strong> tab and select <strong>Disable cache</strong></p>
 		<p>- Switch to <strong>Perfomance</strong> tab</p>
 		<p>- Throttle the network to <strong>Slow 3G</strong> and change CPU to <strong>6x slowdown</strong></p>
+	</div>
+	<div class="result">You looked at a blank screen for <strong class="first-paint-time">___</strong> before seeing this
 	</div>
 
 	<script>
 		const domMap = {
+			'warning': document.querySelector('.warning'),
 			'window-width': document.querySelector('.window-width'),
 			'direction': document.querySelector('.direction'),
 			'dom-loaded': document.querySelector('.dom-loaded'),
@@ -75,9 +79,12 @@
 			'first-contentful-paint-blocked': document.querySelector('.first-contentful-paint-blocked'),
 			'first-paint': document.querySelector('.first-paint'),
 			'first-contentful-paint': document.querySelector('.first-contentful-paint'),
+			'result': document.querySelector('.result'),
+			'first-paint-time': document.querySelector('.first-paint-time')
 		}
 		const STORAGE_KEY = '__timings'
 		const BOUNDARY = 800
+		let isRenderBlocked = window.innerWidth > BOUNDARY
 
 		function updateContent({ selector, value = 'true' }) {
 			domMap[selector].textContent = value
@@ -91,11 +98,11 @@
 			console.log('DOMContentLoaded')
 			updateContent({ selector: 'window-width', value: `${window.innerWidth}px` })
 			updateContent({ selector: 'dom-loaded' })
-			updateContent({ selector: 'direction', value: window.innerWidth < BOUNDARY ? 'more' : 'less' })
-			updateContent({ selector: 'render-blocking', value: window.innerWidth < BOUNDARY })
+			updateContent({ selector: 'direction', value: isRenderBlocked ? 'less' : 'more' })
+			updateContent({ selector: 'render-blocking', value: isRenderBlocked })
+			!isRenderBlocked && domMap.result.classList.add('good')
 			Object.entries(timings).forEach(([selector, value]) => updateContent({ selector, value }))
 		})
-
 		let timings = {
 			'first-paint-blocked': '...',
 			'first-contentful-paint-blocked': '...',
@@ -116,34 +123,46 @@
 			updateContent({ selector: 'window-loaded' })
 		})
 
-		if ("PerformanceObserver" in window && "PerformancePaintTiming" in window) {
-			try {
-				const perfObsever = new PerformanceObserver(perf => {
-					const perfEntries = perf.getEntriesByType('paint');
+		const peftIntervalId = setInterval(showPaintTimings, 500);
+		function showPaintTimings() {
+			if ("PerformanceObserver" in window && "PerformancePaintTiming" in window) {
+				try {
+					console.log('showPaintTimings.....')
+					const performance = window.performance;
+					let perfEntries = performance.getEntriesByType('paint');
 					perfEntries.forEach(({ name, startTime }) => {
 						console.log(`The time to ${name} was ${startTime} milliseconds.`);
 
-						const isRenderBlocked = window.innerWidth < BOUNDARY ? '-blocked' : ''
-						const selector = `${name}${isRenderBlocked}`
+						const selector = `${name}${isRenderBlocked ? '-blocked' : ''}`
 						const value = `${startTime.toFixed(2)} ms`
 
 						timings[selector] = value
 						localStorage.setItem(STORAGE_KEY, JSON.stringify(timings))
 						updateContent({ selector, value })
+						clearInterval(peftIntervalId)
 					});
-				})
-				perfObsever.observe({ entryTypes: ["paint"] })
-			} catch (err) {
-				console.trace(err)
+					showResult()
+				} catch (err) {
+					console.trace(err)
+				}
+			} else {
+				domMap.warning.classList.add('show')
 			}
-		} else {
-			document.querySelector('.warning').classList.add('show')
+		}
+
+		function showResult() {
+			const result = timings[`first-paint${isRenderBlocked ? '-blocked' : ''}`]
+			updateContent({ selector: 'first-paint-time', value: result })
 		}
 
 		// Until the new DOM loaded, browser keep the old DOM content of the last page,
 		// This clear the old content to have better understanding of render blocking resources
 		window.addEventListener('beforeunload', () => {
 			document.body.innerHTML = '';
+			isRenderBlocked = window.innerWidth > BOUNDARY
+			timings[`first-paint${isRenderBlocked ? '-blocked' : ''}`] = '...'
+			timings[`first-contentful-paint${isRenderBlocked ? '-blocked' : ''}`] = '...'
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(timings))
 		})
 	</script>
 </body>
