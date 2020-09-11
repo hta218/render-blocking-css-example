@@ -126,7 +126,7 @@
 
 		const peftIntervalId = setInterval(showPaintTimings, 500);
 		function showPaintTimings() {
-			if ("PerformanceObserver" in window && "PerformancePaintTiming" in window && false) {
+			if ("PerformanceObserver" in window && "PerformancePaintTiming" in window) {
 				try {
 					console.log('showPaintTimings.....')
 					const performance = window.performance;
