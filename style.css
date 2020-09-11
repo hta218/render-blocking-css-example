@@ -37,9 +37,7 @@ strong {
 	text-align: center;
 	background: darkorange;
 	color: black;
-	position: absolute;
 	width: 100%;
-	bottom: 0;
 	z-index: 1;
 }
 
@@ -72,13 +70,26 @@ table th {
 }
 
 .result {
-	position: absolute;
-	bottom: 0;
 	text-align: center;
 	width: 100%;
 	background: darkorange;
 }
 
+.result.hide {
+	display: none;
+}
+
 .result.good {
 	background: limegreen;
+}
+
+.fixed {
+	position: absolute;
+	bottom: 0;
+}
+
+@media screen and (max-width: 567px) {
+	.fixed {
+		position: sticky;
+	}
 }

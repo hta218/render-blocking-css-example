@@ -15,7 +15,7 @@
 </head>
 
 <body>
-	<div class="warning">
+	<div class="warning fixed">
 		<a href="https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver/PerformanceObserver#Browser_compatibility"
 			target="_blank">PerformanceObserver API</a>
 		or
@@ -65,7 +65,7 @@
 		<p>- Switch to <strong>Perfomance</strong> tab</p>
 		<p>- Throttle the network to <strong>Slow 3G</strong> and change CPU to <strong>6x slowdown</strong></p>
 	</div>
-	<div class="result">You looked at a blank screen for <strong class="first-paint-time">___</strong> before seeing this
+	<div class="result fixed">You looked at a blank screen for <strong class="first-paint-time">___</strong> before seeing this
 	</div>
 
 	<script>
@@ -126,7 +126,7 @@
 
 		const peftIntervalId = setInterval(showPaintTimings, 500);
 		function showPaintTimings() {
-			if ("PerformanceObserver" in window && "PerformancePaintTiming" in window) {
+			if ("PerformanceObserver" in window && "PerformancePaintTiming" in window && false) {
 				try {
 					console.log('showPaintTimings.....')
 					const performance = window.performance;
@@ -148,6 +148,7 @@
 				}
 			} else {
 				domMap.warning.classList.add('show')
+				domMap.result.classList.add('hide')
 			}
 		}
 
